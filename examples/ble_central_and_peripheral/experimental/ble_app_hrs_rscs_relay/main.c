@@ -924,8 +924,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     // Based on the role this device plays in the connection, dispatch to the right handler.
     if (role == BLE_GAP_ROLE_PERIPH || ble_evt_is_advertising_timeout(p_ble_evt))
     {
-        ble_hrs_on_ble_evt(p_ble_evt, &m_hrs);
-        ble_rscs_on_ble_evt(p_ble_evt, &m_rscs);
+        //ble_hrs_on_ble_evt(p_ble_evt, &m_hrs);
+        //ble_rscs_on_ble_evt(p_ble_evt, &m_rscs);
         on_ble_peripheral_evt(p_ble_evt);
     }
     else if ((role == BLE_GAP_ROLE_CENTRAL) || (p_ble_evt->header.evt_id == BLE_GAP_EVT_ADV_REPORT))
@@ -1514,7 +1514,7 @@ int main(void)
     
     nus_c_init();
     
-    services_init();
+    //services_init();
     advertising_init();
 
     //Start execution.
