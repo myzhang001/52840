@@ -1,5 +1,6 @@
 --cpu Cortex-M4.fp
 ".\_build\main.o"
+".\_build\somputon_protocol.o"
 ".\_build\boards.o"
 ".\_build\bsp.o"
 ".\_build\bsp_btn_ble.o"
@@ -58,6 +59,8 @@
 ".\_build\nrf_pwr_mgmt.o"
 ".\_build\nrf_section_iter.o"
 ".\_build\nrf_strerror.o"
+".\_build\app_fifo.o"
+".\_build\app_uart_fifo.o"
 ".\_build\nrf_log_backend_rtt.o"
 ".\_build\nrf_log_backend_serial.o"
 ".\_build\nrf_log_backend_uart.o"

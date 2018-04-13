@@ -105,6 +105,12 @@
 
 #include "ble_nus_c.h"
 
+#include "SEGGER_RTT.h"
+#include "Somputon_Protocol.h"
+
+
+#include "app_uart.h"
+
 
 #define PERIPHERAL_ADVERTISING_LED      BSP_BOARD_LED_2
 #define PERIPHERAL_CONNECTED_LED        BSP_BOARD_LED_3
@@ -656,7 +662,7 @@ static void on_ble_central_evt(ble_evt_t const * p_ble_evt)
 
                 //APP_ERROR_CHECK_BOOL(p_gap_evt->conn_handle < NRF_SDH_BLE_CENTRAL_LINK_COUNT);
                 #if 1
-                err_code = ble_nus_c_handles_assign(&m_ble_nus_c[p_gap_evt->conn_handle - 1],
+                err_code = ble_nus_c_handles_assign(&m_ble_nus_c[p_gap_evt->conn_handle],
                                                     p_gap_evt->conn_handle,
                                                     NULL);
                 APP_ERROR_CHECK(err_code);
@@ -664,7 +670,7 @@ static void on_ble_central_evt(ble_evt_t const * p_ble_evt)
             
              // for(int i = 0; i < 4;i++)
                 {
-                   err_code = ble_db_discovery_start(&m_db_discovery[p_gap_evt->conn_handle - 1],
+                   err_code = ble_db_discovery_start(&m_db_discovery[p_gap_evt->conn_handle],
                                                   p_gap_evt->conn_handle);
                     
                     if (err_code != NRF_ERROR_BUSY)
@@ -1358,6 +1364,131 @@ static void nus_c_init(void)
 }
 
 
+void App_RecvHandler(uint16_t command, uint8_t* data,uint16_t len)
+{
+		switch(command)
+		{			
+			case ENCRYPTION_REQ_REPLY:
+					control_device_cmd(NULL);																
+					break;
+			case CLEAR_HISTORY_DATA_COMMAND:
+					 clear_history_data_cmd();
+					 break;			
+			
+			case GET_REAL_TIME_DATA_COMMAND:					 
+					 get_real_time_data_cmd();	
+					 break;		
+			
+			case BOND_COMMAND:
+					bond_cmd();
+					 break;		
+												
+			case GET_HISTORY_DATA_TOTAL_PACKETS:
+			case GET_HISTORY_DATA_COMMAND:
+			case HISTORY_DATA_REPLY_FROM_APP:	
+					 //Clife_GetHisData(command,data,len);
+					 break;
+			
+			case SET_DEVICE_TIME_COMMAND:			
+					 set_device_time_cmd(data);											//  ???APP???					 
+					 break;		
+			
+		case GET_DEVICE_TIME_COMMAND:						 
+					  //get_device_time_cmd(Clock_GetClock());			  //  ????
+						break;
+			
+
+			case CONTROL_DATA_COMMAND:
+					 control_device_cmd(data);						
+			break;			
+															
+			default:				
+						break;
+		}		
+			
+}
+#define UART_TX_BUF_SIZE        256                                     /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE        256 
+
+
+
+void uart_event_handle(app_uart_evt_t * p_event)
+{
+    static uint8_t data_array[BLE_NUS_MAX_DATA_LEN];
+    static uint16_t index = 0;
+    uint32_t ret_val;
+
+    switch (p_event->evt_type)
+    {
+        /**@snippet [Handling data from UART] */
+        case APP_UART_DATA_READY:
+            UNUSED_VARIABLE(app_uart_get(&data_array[index]));
+            index++;
+
+            #if 0
+            if ((data_array[index - 1] == '\n') || (index >= (m_ble_nus_max_data_len)))
+            {
+                NRF_LOG_DEBUG("Ready to send data over BLE NUS");
+                NRF_LOG_HEXDUMP_DEBUG(data_array, index);
+
+                do
+                {
+                    //ret_val = ble_nus_c_string_send(&m_ble_nus_c, data_array, index);
+                    if ( (ret_val != NRF_ERROR_INVALID_STATE) && (ret_val != NRF_ERROR_BUSY) )
+                    {
+                        APP_ERROR_CHECK(ret_val);
+                    }
+                } while (ret_val == NRF_ERROR_BUSY);
+
+                index = 0;
+            }
+            #endif
+            break;
+
+        /**@snippet [Handling data from UART] */
+        case APP_UART_COMMUNICATION_ERROR:
+            NRF_LOG_ERROR("Communication error occurred while handling UART.");
+            APP_ERROR_HANDLER(p_event->data.error_communication);
+            break;
+
+        case APP_UART_FIFO_ERROR:
+            NRF_LOG_ERROR("Error occurred in FIFO module used by UART.");
+            APP_ERROR_HANDLER(p_event->data.error_code);
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+static void uart_init(void)
+{
+    ret_code_t err_code;
+
+    app_uart_comm_params_t const comm_params =
+    {
+        .rx_pin_no    = RX_PIN_NUMBER,
+        .tx_pin_no    = TX_PIN_NUMBER,
+        .rts_pin_no   = RTS_PIN_NUMBER,
+        .cts_pin_no   = CTS_PIN_NUMBER,
+        .flow_control = APP_UART_FLOW_CONTROL_DISABLED,
+        .use_parity   = false,
+        .baud_rate    = UART_BAUDRATE_BAUDRATE_Baud115200
+    };
+
+    APP_UART_FIFO_INIT(&comm_params,
+                       UART_RX_BUF_SIZE,
+                       UART_TX_BUF_SIZE,
+                       uart_event_handle,
+                       APP_IRQ_PRIORITY_LOWEST,
+                       err_code);
+
+    APP_ERROR_CHECK(err_code);
+}
+
+
+
 /**@brief Function for application main entry.
  */
 int main(void)
@@ -1366,6 +1497,9 @@ int main(void)
 
     // Initialize.
     log_init();
+    
+    //uart_init();
+    
     timer_init();
     buttons_leds_init(&erase_bonds);
     power_management_init();
@@ -1383,10 +1517,13 @@ int main(void)
     services_init();
     advertising_init();
 
-    // Start execution.
+    //Start execution.
     NRF_LOG_INFO("Relay example started.");
 
-    if (erase_bonds == true)
+    //app_uart_put(123);
+
+
+    if(erase_bonds == true)
     {
         // Scanning and advertising is done upon PM_EVT_PEERS_DELETE_SUCCEEDED event.
         delete_bonds();

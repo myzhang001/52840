@@ -101,3 +101,7 @@
 .\_build\main.o: ..\..\..\..\..\..\..\components\libraries\balloc\nrf_balloc.h
 .\_build\main.o: ..\..\..\..\..\..\..\components\libraries\experimental_log\nrf_log_default_backends.h
 .\_build\main.o: ..\..\..\..\..\..\..\components\ble\ble_services\ble_nus_c\ble_nus_c.h
+.\_build\main.o: ..\..\..\..\..\..\..\external\segger_rtt\SEGGER_RTT.h
+.\_build\main.o: ..\..\..\..\..\..\..\external\segger_rtt\SEGGER_RTT_Conf.h
+.\_build\main.o: ..\arm5_no_packs\Somputon_Protocol.h
+.\_build\main.o: ..\..\..\..\..\..\..\components\libraries\uart\app_uart.h
